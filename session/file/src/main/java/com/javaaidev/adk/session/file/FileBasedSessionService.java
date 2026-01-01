@@ -18,10 +18,10 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,8 @@ public class FileBasedSessionService implements BaseSessionService {
           .findAndRegisterModules()
           .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
+  private final ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, Session>>>
+      sessions;
   private final ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, Object>>>
       userState;
   private final ConcurrentMap<String, ConcurrentMap<String, Object>> appState;
@@ -59,8 +62,10 @@ public class FileBasedSessionService implements BaseSessionService {
       }
     }
     this.root = root.normalize().toAbsolutePath();
+    this.sessions = new ConcurrentHashMap<>();
     this.userState = new ConcurrentHashMap<>();
     this.appState = new ConcurrentHashMap<>();
+    readAllSessions();
     readAppState();
     readUserState();
     LOGGER.info("Session data saved to {}", this.root);
@@ -94,10 +99,15 @@ public class FileBasedSessionService implements BaseSessionService {
             .lastUpdateTime(Instant.now())
             .build();
 
+    sessions
+        .computeIfAbsent(appName, k -> new ConcurrentHashMap<>())
+        .computeIfAbsent(userId, k -> new ConcurrentHashMap<>())
+        .put(resolvedSessionId, newSession);
+
     try {
       writeSession(appName, userId, resolvedSessionId, newSession);
     } catch (IOException e) {
-      return Single.error(e);
+      LOGGER.error("Failed to write session {}", sessionId, e);
     }
 
     Session returnCopy = copySession(newSession);
@@ -112,12 +122,11 @@ public class FileBasedSessionService implements BaseSessionService {
     Objects.requireNonNull(sessionId, "sessionId cannot be null");
     Objects.requireNonNull(configOpt, "configOpt cannot be null");
 
-    Session storedSession;
-    try {
-      storedSession = getSession(appName, userId, sessionId);
-    } catch (IOException e) {
-      return Maybe.empty();
-    }
+    Session storedSession =
+        sessions
+            .getOrDefault(appName, new ConcurrentHashMap<>())
+            .getOrDefault(userId, new ConcurrentHashMap<>())
+            .get(sessionId);
 
     if (storedSession == null) {
       return Maybe.empty();
@@ -157,18 +166,34 @@ public class FileBasedSessionService implements BaseSessionService {
     Objects.requireNonNull(appName, "appName cannot be null");
     Objects.requireNonNull(userId, "userId cannot be null");
 
-    var sessions = doListSessions(appName, userId);
-    if (sessions.isEmpty()) {
+    Map<String, Session> userSessionsMap =
+        sessions.getOrDefault(appName, new ConcurrentHashMap<>()).get(userId);
+
+    if (userSessionsMap == null || userSessionsMap.isEmpty()) {
       return Single.just(ListSessionsResponse.builder().build());
     }
+
     List<Session> sessionCopies =
-        sessions.stream().map(this::copySessionMetadata).collect(toCollection(ArrayList::new));
+        userSessionsMap.values().stream()
+            .map(this::copySessionMetadata)
+            .collect(toCollection(ArrayList::new));
 
     return Single.just(ListSessionsResponse.builder().sessions(sessionCopies).build());
   }
 
   @Override
   public Completable deleteSession(String appName, String userId, String sessionId) {
+    Objects.requireNonNull(appName, "appName cannot be null");
+    Objects.requireNonNull(userId, "userId cannot be null");
+    Objects.requireNonNull(sessionId, "sessionId cannot be null");
+
+    ConcurrentMap<String, Session> userSessionsMap =
+        sessions.getOrDefault(appName, new ConcurrentHashMap<>()).get(userId);
+
+    if (userSessionsMap != null) {
+      userSessionsMap.remove(sessionId);
+    }
+
     var sessionPath = filePath(appName, userId, sessionId);
     try {
       Files.deleteIfExists(sessionPath);
@@ -185,12 +210,11 @@ public class FileBasedSessionService implements BaseSessionService {
     Objects.requireNonNull(userId, "userId cannot be null");
     Objects.requireNonNull(sessionId, "sessionId cannot be null");
 
-    Session storedSession = null;
-    try {
-      storedSession = getSession(appName, userId, sessionId);
-    } catch (IOException e) {
-      LOGGER.error("Failed to get session {}", sessionId, e);
-    }
+    Session storedSession =
+        sessions
+            .getOrDefault(appName, new ConcurrentHashMap<>())
+            .getOrDefault(userId, new ConcurrentHashMap<>())
+            .get(sessionId);
 
     if (storedSession == null) {
       return Single.just(ListEventsResponse.builder().build());
@@ -240,15 +264,20 @@ public class FileBasedSessionService implements BaseSessionService {
     BaseSessionService.super.appendEvent(session, event);
     session.lastUpdateTime(getInstantFromEvent(event));
 
+    sessions
+        .getOrDefault(appName, new ConcurrentHashMap<>())
+        .getOrDefault(userId, new ConcurrentHashMap<>())
+        .put(sessionId, session);
+
+    mergeWithGlobalState(appName, userId, session);
+
     try {
       writeSession(appName, userId, sessionId, session);
       writeAppState();
       writeUserState();
     } catch (IOException e) {
-      return Single.error(e);
+      LOGGER.error("Failed to write session {}", sessionId, e);
     }
-
-    mergeWithGlobalState(appName, userId, session);
 
     return Single.just(event);
   }
@@ -283,7 +312,7 @@ public class FileBasedSessionService implements BaseSessionService {
     Map<String, Object> sessionState = session.state();
 
     appState
-        .getOrDefault(appName, new ConcurrentHashMap<String, Object>())
+        .getOrDefault(appName, new ConcurrentHashMap<>())
         .forEach((key, value) -> sessionState.put(State.APP_PREFIX + key, value));
 
     userState
@@ -294,34 +323,55 @@ public class FileBasedSessionService implements BaseSessionService {
     return session;
   }
 
-  private List<Session> doListSessions(String appName, String userId) {
-    var sessions = new ArrayList<Session>();
-    var userDir = filePath(appName, userId);
-    if (Files.exists(userDir)) {
-      var files = userDir.toFile().listFiles();
-      if (files != null) {
-        for (var file : files) {
-          try {
-            sessions.add(readSession(file));
-          } catch (IOException e) {
-            LOGGER.error("Failed to read session file {}", file);
-          }
-        }
-      }
-    }
-    return sessions;
+  private Session readSession(Path path) throws IOException {
+    return Session.fromJson(Files.readString(path));
   }
 
-  private Session getSession(String appName, String userId, String sessionId) throws IOException {
-    var sessionPath = filePath(appName, userId, sessionId);
-    if (!Files.exists(sessionPath)) {
-      return null;
+  private void readAllSessions() {
+    var sessionsCount = new AtomicInteger(0);
+    try (var appPaths = Files.list(root)) {
+      appPaths
+          .filter(p -> p.toFile().isDirectory())
+          .forEach(
+              appPath -> {
+                var appName = appPath.getFileName().toString();
+                try (var userPaths = Files.list(appPath)) {
+                  userPaths
+                      .filter(p -> p.toFile().isDirectory())
+                      .forEach(
+                          userPath -> {
+                            var userId = userPath.getFileName().toString();
+                            try (var sessionPaths = Files.list(userPath)) {
+                              sessionPaths
+                                  .filter(p -> p.toFile().isFile())
+                                  .forEach(
+                                      sessionPath -> {
+                                        var sessionId = sessionPath.getFileName().toString();
+                                        try {
+                                          var session = readSession(sessionPath);
+                                          sessions
+                                              .computeIfAbsent(
+                                                  appName, k -> new ConcurrentHashMap<>())
+                                              .computeIfAbsent(
+                                                  userId, k -> new ConcurrentHashMap<>())
+                                              .put(sessionId, session);
+                                          sessionsCount.incrementAndGet();
+                                        } catch (IOException e) {
+                                          LOGGER.error("Ignore invalid session {}", sessionId);
+                                        }
+                                      });
+                            } catch (IOException e) {
+                              LOGGER.error("Ignore sessions of user id {}", userId, e);
+                            }
+                          });
+                } catch (IOException e) {
+                  LOGGER.error("Ignore sessions of app name {}", appName, e);
+                }
+              });
+    } catch (IOException e) {
+      LOGGER.error("Failed to read all sessions", e);
     }
-    return readSession(sessionPath.toFile());
-  }
-
-  private Session readSession(File file) throws IOException {
-    return objectMapper.readValue(file, Session.class);
+    LOGGER.info("Loaded {} sessions", sessionsCount.get());
   }
 
   private void readAppState() {
@@ -369,7 +419,11 @@ public class FileBasedSessionService implements BaseSessionService {
     var userDir = filePath(appName, userId);
     Files.createDirectories(userDir);
     var sessionPath = filePath(appName, userId, sessionId);
-    objectMapper.writeValue(sessionPath.toFile(), session);
+    Files.writeString(
+        sessionPath,
+        session.toJson(),
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING);
   }
 
   private Path appStatePath() {
