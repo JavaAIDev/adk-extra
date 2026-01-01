@@ -45,6 +45,7 @@
     <module>artifact</module>
     <module>session</module>
     <module>session/file</module>
+    <module>memory</module>
   </modules>
 
   <properties>
