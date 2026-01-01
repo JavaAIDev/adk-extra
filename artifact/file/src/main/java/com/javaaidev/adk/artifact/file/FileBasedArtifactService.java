@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,12 +25,16 @@ public class FileBasedArtifactService implements BaseArtifactService {
   private final Path root;
 
   public FileBasedArtifactService(Path root) {
-    this.root = root;
-    try {
-      Files.createDirectories(root);
-    } catch (IOException e) {
-      LOGGER.error("Failed to create artifacts directory", e);
+    Objects.requireNonNull(root, "root path cannot be null");
+    if (!Files.exists(root)) {
+      try {
+        Files.createDirectories(root);
+      } catch (IOException e) {
+        LOGGER.error("Failed to create artifacts directory", e);
+      }
     }
+    this.root = root.normalize().toAbsolutePath();
+    LOGGER.info("Artifacts saved to {}", this.root);
   }
 
   @Override
@@ -140,7 +145,5 @@ public class FileBasedArtifactService implements BaseArtifactService {
     return filename != null && filename.startsWith("user:");
   }
 
-  record PathAndVersion(Path path, Integer version) {
-
-  }
+  record PathAndVersion(Path path, Integer version) {}
 }

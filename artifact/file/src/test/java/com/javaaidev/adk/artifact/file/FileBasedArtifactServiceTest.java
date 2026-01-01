@@ -1,6 +1,5 @@
 package com.javaaidev.adk.artifact.file;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.genai.types.Part;

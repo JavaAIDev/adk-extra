@@ -5,12 +5,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.javaaidev.adk</groupId>
-    <artifactId>artifact</artifactId>
+    <artifactId>adk-extra</artifactId>
     <version>0.1.0</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>artifact-file</artifactId>
-  <name>Artifact :: File</name>
+  <artifactId>session-file</artifactId>
+  <name>Session :: File</name>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
@@ -30,6 +31,11 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
