@@ -11,6 +11,36 @@
   <name>ADK Extra</name>
   <description>Extra Library for Google Agent Development Kit</description>
 
+  <url>https://github.com/JavaAIDev/adk-extra</url>
+  <licenses>
+    <license>
+      <name>The MIT License</name>
+      <url>https://mit-license.org</url>
+    </license>
+  </licenses>
+  <organization>
+    <name>JavaAIDev.com</name>
+    <url>https://javaaidev.com</url>
+  </organization>
+  <inceptionYear>2025</inceptionYear>
+
+  <developers>
+    <developer>
+      <name>Fu Cheng</name>
+      <email>alexcheng1982@gmail.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>
+      scm:git:git://github.com/JavaAIDev/adk-extra.git
+    </connection>
+    <developerConnection>
+      scm:git:ssh://github.com:JavaAIDev/adk-extra.git
+    </developerConnection>
+    <url>http://github.com/JavaAIDev/adk-extra</url>
+  </scm>
+
   <modules>
     <module>artifact</module>
   </modules>
@@ -45,4 +75,67 @@
     </dependencies>
   </dependencyManagement>
 
+  <profiles>
+    <profile>
+      <id>publish</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.5.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>ossrh</publishingServerId>
+              <tokenAuth>true</tokenAuth>
+              <autoPublish>true</autoPublish>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.2.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.6.3</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <failOnError>false</failOnError>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
