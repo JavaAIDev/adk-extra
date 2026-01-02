@@ -7,3 +7,5 @@ Extra Library for Google Agent Development Kit
 - File based session service
 - File based artifact service
 - Spring AI Vector Store based memory service
+- Callbacks
+    - Context state injection
