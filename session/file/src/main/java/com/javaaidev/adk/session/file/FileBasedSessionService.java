@@ -36,6 +36,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** File based implementation of {@linkplain BaseSessionService} */
 public class FileBasedSessionService implements BaseSessionService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSessionService.class);
@@ -107,7 +108,7 @@ public class FileBasedSessionService implements BaseSessionService {
     try {
       writeSession(appName, userId, resolvedSessionId, newSession);
     } catch (IOException e) {
-      LOGGER.error("Failed to write session {}", sessionId, e);
+      LOGGER.error("Failed to write session {}", resolvedSessionId, e);
     }
 
     Session returnCopy = copySession(newSession);
@@ -346,7 +347,7 @@ public class FileBasedSessionService implements BaseSessionService {
                                   .filter(p -> p.toFile().isFile())
                                   .forEach(
                                       sessionPath -> {
-                                        var sessionId = sessionPath.getFileName().toString();
+                                        var sessionId = getSessionId(sessionPath);
                                         try {
                                           var session = readSession(sessionPath);
                                           sessions
@@ -372,6 +373,12 @@ public class FileBasedSessionService implements BaseSessionService {
       LOGGER.error("Failed to read all sessions", e);
     }
     LOGGER.info("Loaded {} sessions", sessionsCount.get());
+  }
+
+  private String getSessionId(Path path) {
+    String filename = path.getFileName().toString();
+    int index = filename.lastIndexOf('.');
+    return (index == -1) ? filename : filename.substring(0, index);
   }
 
   private void readAppState() {
@@ -427,11 +434,11 @@ public class FileBasedSessionService implements BaseSessionService {
   }
 
   private Path appStatePath() {
-    return root.resolve("__app__");
+    return root.resolve("__app__.json");
   }
 
   private Path userStatePath() {
-    return root.resolve("__user__");
+    return root.resolve("__user__.json");
   }
 
   private Path filePath(String appName, String userId) {
@@ -439,6 +446,6 @@ public class FileBasedSessionService implements BaseSessionService {
   }
 
   private Path filePath(String appName, String userId, String sessionId) {
-    return filePath(appName, userId).resolve(sessionId);
+    return filePath(appName, userId).resolve(sessionId + ".json");
   }
 }

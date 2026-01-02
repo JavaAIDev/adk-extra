@@ -9,13 +9,20 @@
     <version>0.1.1</version>
   </parent>
 
-  <artifactId>session</artifactId>
-  <name>Session</name>
+  <artifactId>callback</artifactId>
+  <name>Callback</name>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.adk</groupId>
+      <artifactId>google-adk</artifactId>
+    </dependency>
+  </dependencies>
 
 </project>

@@ -17,6 +17,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
+/** {@linkplain BaseMemoryService} implementation using Spring AI {@linkplain VectorStore} */
 public class VectorStoreMemoryService implements BaseMemoryService {
 
   private final VectorStore vectorStore;
@@ -26,10 +27,17 @@ public class VectorStoreMemoryService implements BaseMemoryService {
   public static final String METADATA_USER_ID = "adk.userId";
   public static final String METADATA_SESSION_ID = "adk.sessionId";
 
+  /**
+   * @param vectorStore Spring AI {@linkplain VectorStore}
+   */
   public VectorStoreMemoryService(VectorStore vectorStore) {
     this(vectorStore, SearchRequest.builder().topK(3).build());
   }
 
+  /**
+   * @param vectorStore Spring AI {@linkplain VectorStore}
+   * @param searchRequest Base {@linkplain SearchRequest} to search for documents
+   */
   public VectorStoreMemoryService(VectorStore vectorStore, SearchRequest searchRequest) {
     Objects.requireNonNull(vectorStore, "vectorStore cannot be null");
     Objects.requireNonNull(searchRequest, "searchRequest cannot be null");

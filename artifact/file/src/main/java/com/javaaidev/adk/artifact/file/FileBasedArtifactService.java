@@ -18,6 +18,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** File based implementation of {@linkplain BaseArtifactService} */
 public class FileBasedArtifactService implements BaseArtifactService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedArtifactService.class);
