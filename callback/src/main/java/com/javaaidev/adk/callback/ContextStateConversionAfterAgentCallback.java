@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * @param targetContextKey Context key of the target
  * @param escalateOnConversionError Should escalate when conversion failed
  */
-public record ContextStateConvertAfterAgentCallback(
+public record ContextStateConversionAfterAgentCallback(
     String sourceContextKey,
     Class<?> targetJavaType,
     String targetContextKey,
@@ -25,7 +25,7 @@ public record ContextStateConvertAfterAgentCallback(
     implements AfterAgentCallback {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ContextStateConvertAfterAgentCallback.class);
+      LoggerFactory.getLogger(ContextStateConversionAfterAgentCallback.class);
 
   @Override
   public Maybe<Content> call(CallbackContext callbackContext) {
