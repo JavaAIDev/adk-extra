@@ -5,6 +5,7 @@ import com.google.adk.agents.Callbacks.BeforeAgentCallback;
 import com.google.genai.types.Content;
 import io.reactivex.rxjava3.core.Maybe;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Inject context state before running an agent
@@ -13,6 +14,10 @@ import java.util.Map;
  */
 public record ContextStateInjectionBeforeAgentCallback(Maybe<Map<String, Object>> stateDelta)
     implements BeforeAgentCallback {
+
+  public ContextStateInjectionBeforeAgentCallback(Map<String, Object> stateDelta) {
+    this(Maybe.just(Objects.requireNonNull(stateDelta, "stateDelta cannot be null")));
+  }
 
   @Override
   public Maybe<Content> call(CallbackContext callbackContext) {

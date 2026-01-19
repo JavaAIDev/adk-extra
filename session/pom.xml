@@ -6,11 +6,12 @@
   <parent>
     <groupId>com.javaaidev.adk</groupId>
     <artifactId>adk-extra</artifactId>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
   </parent>
 
   <artifactId>session</artifactId>
   <name>Session</name>
+  <packaging>pom</packaging>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
