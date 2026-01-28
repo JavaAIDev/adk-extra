@@ -10,3 +10,4 @@ Extra Library for Google Agent Development Kit
 - Spring AI Vector Store based memory service
 - Callbacks
     - Context state injection
+    - Context state value conversation, from a JSON string / a value to an object
