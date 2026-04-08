@@ -6,7 +6,6 @@ import com.google.genai.types.Part;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +38,7 @@ class FileBasedArtifactServiceTest {
     assertThat(version).isEqualTo(0);
     var part =
         service
-            .loadArtifact(APP_NAME, USER_ID, SESSION_ID, FILENAME, Optional.empty())
+            .loadArtifact(APP_NAME, USER_ID, SESSION_ID, FILENAME, null)
             .blockingGet();
     assertThat(part.inlineData()).isPresent();
     var filenames =
@@ -71,7 +70,7 @@ class FileBasedArtifactServiceTest {
     assertThat(version).isEqualTo(0);
     var part =
         service
-            .loadArtifact(APP_NAME, USER_ID, SESSION_ID, USER_FILENAME, Optional.empty())
+            .loadArtifact(APP_NAME, USER_ID, SESSION_ID, USER_FILENAME, null)
             .blockingGet();
     assertThat(part.inlineData()).isPresent();
     service

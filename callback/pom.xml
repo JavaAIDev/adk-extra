@@ -6,7 +6,7 @@
   <parent>
     <groupId>com.javaaidev.adk</groupId>
     <artifactId>adk-extra</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
   </parent>
 
   <artifactId>callback</artifactId>

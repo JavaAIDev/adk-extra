@@ -6,7 +6,7 @@
 
   <groupId>com.javaaidev.adk</groupId>
   <artifactId>adk-extra</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
   <packaging>pom</packaging>
   <name>ADK Extra</name>
   <description>Extra Library for Google Agent Development Kit</description>
@@ -54,7 +54,7 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <adk.version>0.6.0</adk.version>
+    <adk.version>1.0.0</adk.version>
   </properties>
 
   <dependencyManagement>

@@ -15,10 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** File based implementation of {@linkplain BaseArtifactService} */
+/**
+ * File based implementation of {@linkplain BaseArtifactService}
+ */
 public class FileBasedArtifactService implements BaseArtifactService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedArtifactService.class);
@@ -42,7 +45,7 @@ public class FileBasedArtifactService implements BaseArtifactService {
   public Single<Integer> saveArtifact(
       String appName, String userId, String sessionId, String filename, Part artifact) {
     try {
-      var pathAndVersion = filePath(appName, userId, sessionId, filename, false, Optional.empty());
+      var pathAndVersion = filePath(appName, userId, sessionId, filename, false, null);
       var data =
           artifact
               .inlineData()
@@ -57,7 +60,7 @@ public class FileBasedArtifactService implements BaseArtifactService {
 
   @Override
   public Maybe<Part> loadArtifact(
-      String appName, String userId, String sessionId, String filename, Optional<Integer> version) {
+      String appName, String userId, String sessionId, String filename, @Nullable Integer version) {
     try {
       var pathAndVersion = filePath(appName, userId, sessionId, filename, true, version);
       var data = Files.readAllBytes(pathAndVersion.path());
@@ -115,7 +118,7 @@ public class FileBasedArtifactService implements BaseArtifactService {
       String sessionId,
       String filename,
       boolean read,
-      Optional<Integer> readVersion)
+      @Nullable Integer readVersion)
       throws IOException {
     var path = filePath(appName, userId, sessionId, filename);
     int version;
@@ -127,7 +130,8 @@ public class FileBasedArtifactService implements BaseArtifactService {
         var maxVersion =
             files.map(p -> p.getFileName().toString()).map(Integer::parseInt).max(Integer::compare);
         version =
-            read ? readVersion.orElse(maxVersion.orElse(0)) : maxVersion.map(v -> v + 1).orElse(0);
+            read ? Optional.ofNullable(readVersion).orElse(maxVersion.orElse(0))
+                : maxVersion.map(v -> v + 1).orElse(0);
       }
     }
     return new PathAndVersion(path.resolve(String.valueOf(version)), version);
@@ -146,5 +150,7 @@ public class FileBasedArtifactService implements BaseArtifactService {
     return filename != null && filename.startsWith("user:");
   }
 
-  record PathAndVersion(Path path, Integer version) {}
+  record PathAndVersion(Path path, Integer version) {
+
+  }
 }
